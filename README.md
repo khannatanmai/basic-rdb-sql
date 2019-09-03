@@ -11,17 +11,17 @@ A basic Relational Database which takes SQL Queries in Python
 - In Aggregate, no space between function and brackets
 
 ## TO-DO
-[x] Parse SQL Queries
-[x] Select All records using *
-[x] Select Any Columns from one Table
-[x] Display tablename.columnname
-[x] Detect type of query - Where, if not where, aggregate or normal
-[x] Deal with Aggregate Functions
-[ ] Add functionality in select to take more than one table
-[ ] Add Distinct
-[ ] Detect Where Clause (single)
-[ ] Run Where Clause on returned table and give final table
-[ ] Add functionality for OR and AND in Where
-[ ] Detect when Join
-[ ] Join Tables (Remove Common Column)
+- [x] Parse SQL Queries
+- [x] Select All records using *
+- [x] Select Any Columns from one Table
+- [x] Display tablename.columnname
+- [x] Detect type of query - Where, if not where, aggregate or normal
+- [x] Deal with Aggregate Functions
+- [ ] Add functionality in select to take more than one table
+- [ ] Add Distinct
+- [ ] Detect Where Clause (single)
+- [ ] Run Where Clause on returned table and give final table
+- [ ] Add functionality for OR and AND in Where
+- [ ] Detect when Join
+- [ ] Join Tables (Remove Common Column)
  
