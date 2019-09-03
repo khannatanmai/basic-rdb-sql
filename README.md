@@ -8,6 +8,7 @@ A basic Relational Database which takes SQL Queries in Python
 
 ## Note
 - Order of attributes in SELECT does not matter
+- In Aggregate, no space between function and brackets
 
 ## TO-DO
 [x] Parse SQL Queries
@@ -15,3 +16,4 @@ A basic Relational Database which takes SQL Queries in Python
 [x] Select Any Columns from one Table
 [x] Display tablename.columnname
 [ ] Detect type of query - Where, if where - join, if not where, aggregate or normal
+[x] Deal with Aggregate Functions
