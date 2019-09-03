@@ -1,7 +1,7 @@
 1. Select * from table2;
 
 Output: 
-table1.B,table2.D
+table2.B,table2.D
 158,11191
 773,14421
 85,5117

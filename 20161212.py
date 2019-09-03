@@ -1,5 +1,57 @@
 import sys
+import sqlparse
+from sqlparse.sql import IdentifierList, Identifier
+from sqlparse.tokens import Keyword
 
+# SQL PARSING
+
+class SQLParser(object):
+	def parse_sql_columns(sql):
+		columns = []
+		parsed = sqlparse.parse(sql)
+		stmt = parsed[0]
+		for token in stmt.tokens:
+			if isinstance(token, IdentifierList):
+				for identifier in token.get_identifiers():
+					columns.append(identifier.get_real_name())
+			if isinstance(token, Identifier):
+				columns.append(token.get_real_name())
+			if token.ttype is Keyword:  # from
+				break
+		return columns
+
+	def get_table_name(token):
+		parent_name = token.get_parent_name()
+		real_name = token.get_real_name()
+		if parent_name:
+			return parent_name + "." + real_name
+		else:
+			return real_name
+
+	def parse_sql_tables(sql):
+		tables = []
+		parsed = sqlparse.parse(sql)
+		stmt = parsed[0]
+		from_seen = False
+		for token in stmt.tokens:
+			if from_seen:
+				if token.ttype is Keyword:
+					continue
+				else:
+					if isinstance(token, IdentifierList):
+						for identifier in token.get_identifiers():
+							tables.append(SQLParser.get_table_name(identifier))
+					elif isinstance(token, Identifier):
+						tables.append(SQLParser.get_table_name(token))
+					else:
+						pass
+			if token.ttype is Keyword and token.value.upper() == "FROM":
+				from_seen = True
+		return tables
+
+
+
+# DB PARSING
 class TableMetadata:
 	'''Class to create objects which store metadata of each table'''
 	def __init__(self, name):
@@ -42,9 +94,9 @@ def read_metadata(metadata_all):
 					metadata_all[current_table_name].add_attribute(line)
 
 				else:
-					print "Syntax Error in metadata.txt"
+					print("Syntax Error in metadata.txt")
 	except IOError:
-		print "No Metadata file (Should be named metadata.txt)"
+		print("No Metadata file (Should be named metadata.txt)")
 		sys.exit(1)
 		#ERROR
 
@@ -68,21 +120,27 @@ def read_table(table_name):
 				table_data.append(line)
 	
 	except IOError:
-		print "No csv file found for table:", table_name, "in the database."
+		print("No csv file found for table:", table_name, "in the database.")
 		sys.exit(1)
 		#ERROR
 
 	return table_data
 
-def select_query(metadata_all, table_name, table_data, query_attributes_list):
+def select_query(metadata_all, table_name, query_attributes_list):
 	return_table = []
+
+	table_data = read_table(table_name)
 
 	table_attributes_list = metadata_all[table_name].attributes
 
 	if query_attributes_list[0] == "*": #If returning all columns of table
 		header_line = table_attributes_list
 
-		return_table.append(header_line)
+		new_header_line = []
+		for header in header_line:
+			new_header_line.append(table_name + "." + header) #adding table name to header
+
+		return_table.append(new_header_line)
 
 		for data_tuple in table_data:
 			return_table.append(data_tuple)
@@ -92,7 +150,7 @@ def select_query(metadata_all, table_name, table_data, query_attributes_list):
 		#Verification that all columns given exist in table
 		for query_attribute in query_attributes_list:
 			if query_attribute not in table_attributes_list:
-				print "Attribute mentioned in SELECT not found in", table_name
+				print("Attribute mentioned in SELECT not found in", table_name)
 				sys.exit(1)
 				#ERROR
 
@@ -104,11 +162,10 @@ def select_query(metadata_all, table_name, table_data, query_attributes_list):
 		for table_attribute in table_attributes_list:
 			if table_attribute in query_attributes_list:
 				indices_list.append(index_count)
-				header_line.append(table_attribute)
+				header_line.append(table_name + "." + table_attribute)
 
 			index_count += 1
 
-		
 		return_table.append(header_line)
 
 		for data_tuple in table_data:
@@ -123,17 +180,89 @@ def select_query(metadata_all, table_name, table_data, query_attributes_list):
 
 def print_output(final_table):
 	for line in final_table:
-		print ",".join(line)
+		print(",".join(line))
+
+def check_aggregate(sql_query_parsed_tokens):
+	list_allowed_aggregates = ["SUM","MAX","MIN","AVERAGE"]
+
+	for agg in list_allowed_aggregates:
+		for token in sql_query_parsed_tokens:
+			if agg in token.value.upper():
+				return token.value.upper() #if agg function found, return equation
+
+	return "0" #to keep return value consistent
+
+
 #MAIN
 
 metadata_all = {} #dictionary where key is tablename and value is TableMetadata object
 metadata_all = read_metadata(metadata_all)
-table_name = "table1"
-table_data = read_table(table_name)
 
-return_table = select_query(metadata_all, table_name, table_data, ["A","B","C","D"])
+#Query Parsing
+sql_query = "Select A,B,C from table1, table2 Where table1.B=table2.B"
+sql_query2 = "Select A,B,C from table1"
+#print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
-print_output(return_table)
+parsed = sqlparse.parse(sql_query)[0]
+
+column_list = SQLParser.parse_sql_columns(sql_query)
+table_list = SQLParser.parse_sql_tables(sql_query)
+
+if(len(column_list) == 0):
+	column_list = ["*"]
+
+#for x in sqlparse.sql.IdentifierList(parsed).get_identifiers():
+#	print(x)
+
+#FOR SELECT QUERIES
+
+#Checking if Where exists in Query
+where_flag = 0
+
+for token in parsed.tokens:
+	if "WHERE" in token.value.upper():
+		where_flag = 1
+		break
+
+if(where_flag == 1):
+	print("Where Query!")
+
+
+else: #No Where Present in Query
+	print("Not Where!")
+
+	retval = check_aggregate(parsed.tokens)
+
+	if(retval == "0"): #No Aggregate Function Present in Query, i.e. Normal Select Query
+		ret_table = select_query(metadata_all, "table1", column_list)
+		print_output(ret_table)
+
+	else: #Aggregate Function Present
+		pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+#table_data = read_table(table_name)
+
+#return_table = select_query(metadata_all, table_name, table_data, ["*"])
+
+#print_output(return_table)
 
 #print(table_data)
 
