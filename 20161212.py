@@ -192,6 +192,43 @@ def check_aggregate(sql_query_parsed_tokens):
 
 	return "0" #to keep return value consistent
 
+def aggregate_query(metadata_all, table_name, check_retval):
+	column_list = []
+	return_output = []
+
+	agg_string = check_retval.replace("("," ").replace(")"," ").split(" ") #replacing brackets with spaces
+
+	agg_func = agg_string[0]
+	column_list.append(agg_string[1])
+
+	ret_table = select_query(metadata_all, table_list[0], column_list) #Get the column
+
+	header_line = str(agg_func + "(" + ret_table[0][0] + ")")
+	
+	return_output.append([header_line])
+
+	numbers_data = [ int(x[0]) for x in ret_table[1:] ] #excluding Header Line
+	
+	if agg_func == "MAX":
+		return_output.append([str(max(numbers_data))])
+	
+	elif agg_func == "MIN":
+		return_output.append([str(min(numbers_data))])
+
+	elif agg_func == "SUM":
+		return_output.append([str(sum(numbers_data))])
+
+	elif agg_func == "AVERAGE":
+		avg = sum(numbers_data) / len(numbers_data)
+		return_output.append([str(avg)])
+
+	else:
+		print("ERROR in Aggregate Functions")
+		exit(EXIT_FAILURE)
+
+	return return_output
+
+
 
 #MAIN
 
@@ -201,8 +238,8 @@ metadata_all = read_metadata(metadata_all)
 final_output = []
 
 #Query Parsing
-sql_query = "Select A,B,C from table1, table2 Where table1.B=table2.B"
-sql_query = "Select average(B) from table1"
+sql_query = "Select A,table1.B,C,D from table1, table2"
+sql_query = "Select max(B) from table1"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -237,38 +274,10 @@ else: #No Where Present in Query
 		ret_table = select_query(metadata_all, table_list[0], column_list)
 		final_output = ret_table
 
-	else: #Aggregate Function Present
+	else: #AGGREGATE FUNCTION PROCESSING
 		#print(retval)
-		column_list = []
-		agg_string = retval.replace("("," ").replace(")"," ").split(" ") #replacing brackets with spaces
-
-		agg_func = agg_string[0]
-		column_list.append(agg_string[1])
-
-		ret_table = select_query(metadata_all, table_list[0], column_list) #Get the column
-
-		header_line = str(agg_func + "(" + ret_table[0][0] + ")")
+		final_output = aggregate_query(metadata_all, table_list[0], retval)
 		
-		final_output.append([header_line])
-
-		numbers_data = [ int(x[0]) for x in ret_table[1:] ] #excluding Header Line
-		
-		if agg_func == "MAX":
-			final_output.append([str(max(numbers_data))])
-		
-		elif agg_func == "MIN":
-			final_output.append([str(min(numbers_data))])
-
-		elif agg_func == "SUM":
-			final_output.append([str(sum(numbers_data))])
-
-		elif agg_func == "AVERAGE":
-			avg = sum(numbers_data) / len(numbers_data)
-			final_output.append([str(avg)])
-
-		else:
-			print("ERROR in Aggregate Functions")
-			exit(EXIT_FAILURE)
 
 
 #PRINT FINAL OUTPUT
