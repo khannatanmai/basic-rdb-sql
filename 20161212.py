@@ -278,6 +278,30 @@ def multiple_table_select(metadata_all, table_list, query_attributes_list):
 
 	return return_table
 
+def parse_where(where_string):
+	allowed_functions = ["<=", ">=", "<", ">", "="] #Need to check double operators first
+	allowed_operators = ["AND", "OR"]
+	
+	parsed_where = []
+
+	for token in where_string:
+		if token.value.upper() == "WHERE" or str.isspace(str(token)): #Ignore where and Whitespace
+			continue
+
+		for allowed_func in allowed_functions:
+			if allowed_func in str(token):
+				split_string = str(token).split(allowed_func)
+
+				parsed_where.append(split_string[0].strip())
+				parsed_where.append(allowed_func)
+				parsed_where.append(split_string[1].strip())
+
+				break
+
+		if token.value.upper() == "AND" or token.value.upper() == "OR":
+			parsed_where.append(str(token.value.upper()))
+
+	return parsed_where
 
 
 #MAIN
@@ -286,52 +310,52 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select A,C from table1"
-sql_query = "Select A,B,C,D from table1,table2"
+sql_query = "Select A,C from table1 where A= 500 or C <= 500"
+sql_query2 = "Select A,B,C,D from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
 
-#for token in parsed.tokens:
-	#print(token)
-
 column_list = SQLParser.parse_sql_columns(sql_query)
 table_list = SQLParser.parse_sql_tables(sql_query)
 
-if(len(column_list) == 0):
+if len(column_list) == 0:
 	column_list = ["*"]
 
 
 #FOR SELECT QUERIES
 final_output = []
 
-if(len(table_list) == 1): #If only one table in query
+if len(table_list) == 1: #If only one table in query
 	final_output = select_query(metadata_all, table_list[0], column_list)
 else: #Multiple tables
 	final_output = multiple_table_select(metadata_all, table_list, column_list)
 
 #Checking if Where exists in Query
-where_flag = 0
+parsed_where = []
 
 for token in parsed.tokens:
 	if "WHERE" in token.value.upper():
-		where_flag = 1
+		parsed_where = parse_where(token)
 		break
 
-if(where_flag == 1):
-	print("Where Query!")
-	#TODO
+#PROCESSING WHERE
+if len(parsed_where) > 0:
+	print(parsed_where)
+
+	
 
 #Checking if Aggregate Function in Query
 retval = check_aggregate(parsed.tokens)
-if(retval != "0"): #AGGREGATE FUNCTION PROCESSING
-	#print(retval)
+
+#PROCESSING AGGREGATE FUNCTION 
+if(retval != "0"): 
 	final_output = aggregate_query(metadata_all, table_list[0], retval)
 
 
 
 #PRINT FINAL OUTPUT
-print_output(final_output)
+#print_output(final_output)
 
 #
 #table_data = read_table(table_name)

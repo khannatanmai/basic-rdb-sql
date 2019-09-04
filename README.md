@@ -28,8 +28,8 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Display tablename.columnname
 - [x] Detect type of query - Where, if not where, aggregate or normal
 - [x] Deal with Aggregate Functions
-- [ ] Deal with more than one table (multiple calls to select)
-- [ ] Incorporate multiple tables in final output
+- [x] Deal with more than one table (multiple calls to select)
+- [x] Incorporate multiple tables in final output
 - [ ] Add Distinct
 - [ ] Detect Where Clause (single)
 - [ ] Run Where Clause on returned table and give final table
