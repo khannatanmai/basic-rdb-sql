@@ -36,8 +36,9 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Deal with more than one table (multiple calls to select)
 - [x] Incorporate multiple tables in final output
 - [ ] Add Distinct
-- [ ] Detect Where Clause (single)
-- [ ] Run Where Clause on returned table and give final table
+- [x] Detect Where Clause (single)
+- [x] Run Where Clause on full table and give pruned table
+- [ ] Run SelectWhere on Pruned table to give only required columns
 - [ ] Add functionality for OR and AND in Where
 - [ ] Detect when Join
 - [ ] Join Tables (Remove Common Column)
