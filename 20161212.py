@@ -342,7 +342,7 @@ def where_comparison_check(data_cell, check_function, check_value):
 	return 0
 
 def where_query(metadata_all, table_list, parsed_where):
-	return_table = []
+	pruned_table = []
 	select_output_table = [] 
 
 	#Get full tables
@@ -351,7 +351,7 @@ def where_query(metadata_all, table_list, parsed_where):
 	else: #Multiple tables
 		select_output_table = multiple_table_select(metadata_all, table_list, ["*"])
 
-	return_table.append(select_output_table[0]) #Add Header Line to Return Table
+	pruned_table.append(select_output_table[0]) #Add Header Line to the Pruned Table
 
 	select_output_table = select_output_table[1:] #Remove Header Line from Select Table
 
@@ -360,14 +360,28 @@ def where_query(metadata_all, table_list, parsed_where):
 	check_value = int(parsed_where[2])
 
 	attr_index = 0
-	#for 
+	found_flag = 0
+	for i in range(len(pruned_table[0])):
+		if check_attribute == pruned_table[0][i] or check_attribute == pruned_table[0][i].split(".")[1]:
+			found_flag = 1
+			attr_index = i
+			break
 
+	if found_flag == 0:
+		print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
+		sys.exit(1)
+
+	for select_tuple in select_output_table:
+		if(where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1):
+			pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
 
 
 	#AND/OR present
 
 
-	return return_table
+	return pruned_table
+
+	#Run Select on this to get only required columns
 
 #MAIN
 
@@ -375,7 +389,7 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select A,C from table1 where A> 500 and C <= 500"
+sql_query = "Select A,C from table1 where A= 411"
 sql_query = "Select * from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
@@ -387,31 +401,34 @@ table_list = SQLParser.parse_sql_tables(sql_query)
 if len(column_list) == 0:
 	column_list = ["*"]
 
-
-#FOR SELECT QUERIES (NO WHERE)
-final_output = []
-
-if len(table_list) == 1: #If only one table in query
-	final_output = select_query(metadata_all, table_list[0], column_list)
-else: #Multiple tables
-	final_output = multiple_table_select(metadata_all, table_list, column_list)
-
-'''
 #Checking if Where exists in Query
 parsed_where = []
+where_flag = 0
 
 for token in parsed.tokens:
 	if "WHERE" in token.value.upper():
 		parsed_where = parse_where(token)
+		where_flag = 1
 		break
 
-#PROCESSING WHERE
-if len(parsed_where) > 0:
-	print(parsed_where)
 
-'''
+if where_flag == 0:
 
-	
+	#FOR SELECT QUERIES (NO WHERE)
+	final_output = []
+
+	if len(table_list) == 1: #If only one table in query
+		final_output = select_query(metadata_all, table_list[0], column_list)
+	else: #Multiple tables
+		final_output = multiple_table_select(metadata_all, table_list, column_list)
+
+else: 
+
+	#PROCESSING WHERE
+	if len(parsed_where) > 0:
+		#print(parsed_where)
+
+		final_output = where_query(metadata_all, table_list, parsed_where)
 
 #Checking if Aggregate Function in Query
 retval = check_aggregate(parsed.tokens)

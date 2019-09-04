@@ -8,6 +8,7 @@ A basic Relational Database which takes SQL Queries in Python
 - with multiple tables, if attribute is "table1.A" then "table1" should be in FROM AND attribute should be of that table
 - with multiple tables, tables should be same length
 - with multiple tables, attribute mentioned should be in one of the tables mentioned
+- attribute in WHERE must be in mentioned tables
 
 ## Note
 - Order of attributes in SELECT does not matter
