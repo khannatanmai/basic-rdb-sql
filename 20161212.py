@@ -232,6 +232,26 @@ def multiple_table_select(metadata_all, table_list, query_attributes_list):
 	#Calls select for each table and puts them together in one table
 	return_table = []
 
+	if query_attributes_list[0] == "*": #Get ALL columns from all tables mentioned
+		for table_name in table_list: #Creating a combined table by calling select * for EACH table
+
+			if len(return_table) < 1: #return_table is empty (first iteration)
+				return_table = select_query(metadata_all, table_name, ["*"])
+
+			else: #(all other iterations)
+				next_table = select_query(metadata_all, table_name, ["*"])
+
+				if len(return_table) != len(next_table):
+					print("Tables not of same length!")
+					sys.exit(1)
+
+				for i in range(len(next_table)):
+					return_table[i] = return_table[i] + next_table[i] #Combining all the tables into one output
+
+		return return_table
+
+	#If it's NOT Select *
+
 	query_list_dict = {} #Key: TableName, Value: Attributes needed from that Table
 
 	for table_name in table_list:
@@ -303,6 +323,51 @@ def parse_where(where_string):
 
 	return parsed_where
 
+def where_comparison_check(data_cell, check_function, check_value):
+	if check_function == "<=" and data_cell <= check_value:
+		return 1
+
+	if check_function == ">=" and data_cell >= check_value:
+		return 1
+
+	if check_function == "<" and data_cell < check_value:
+		return 1
+
+	if check_function == ">" and data_cell > check_value:
+		return 1
+
+	if check_function == "=" and data_cell == check_value:
+		return 1
+
+	return 0
+
+def where_query(metadata_all, table_list, parsed_where):
+	return_table = []
+	select_output_table = [] 
+
+	#Get full tables
+	if len(table_list) == 1: #If only one table in query
+		select_output_table = select_query(metadata_all, table_list[0], ["*"])
+	else: #Multiple tables
+		select_output_table = multiple_table_select(metadata_all, table_list, ["*"])
+
+	return_table.append(select_output_table[0]) #Add Header Line to Return Table
+
+	select_output_table = select_output_table[1:] #Remove Header Line from Select Table
+
+	check_attribute = parsed_where[0]
+	check_function = parsed_where[1]
+	check_value = int(parsed_where[2])
+
+	attr_index = 0
+	#for 
+
+
+
+	#AND/OR present
+
+
+	return return_table
 
 #MAIN
 
@@ -310,8 +375,8 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select A,C from table1 where A= 500 or C <= 500"
-sql_query2 = "Select A,B,C,D from table1,table2"
+sql_query = "Select A,C from table1 where A> 500 and C <= 500"
+sql_query = "Select * from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -323,7 +388,7 @@ if len(column_list) == 0:
 	column_list = ["*"]
 
 
-#FOR SELECT QUERIES
+#FOR SELECT QUERIES (NO WHERE)
 final_output = []
 
 if len(table_list) == 1: #If only one table in query
@@ -331,6 +396,7 @@ if len(table_list) == 1: #If only one table in query
 else: #Multiple tables
 	final_output = multiple_table_select(metadata_all, table_list, column_list)
 
+'''
 #Checking if Where exists in Query
 parsed_where = []
 
@@ -342,6 +408,8 @@ for token in parsed.tokens:
 #PROCESSING WHERE
 if len(parsed_where) > 0:
 	print(parsed_where)
+
+'''
 
 	
 
@@ -355,7 +423,7 @@ if(retval != "0"):
 
 
 #PRINT FINAL OUTPUT
-#print_output(final_output)
+print_output(final_output)
 
 #
 #table_data = read_table(table_name)

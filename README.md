@@ -16,8 +16,12 @@ A basic Relational Database which takes SQL Queries in Python
 ## Order of Execution (Pipeline)
 - Parse Query
 - Check if multiple tables
+- [IF WHERE]
+- Execute Select ALL for all tables mentioned in query
+- Execute Where on output of SELECT ALL
 - Execute Select Query (Multiple if multiple tables and combine together)
-- Execute Where on Output of Select
+- [IF NOT WHERE]
+- Execute Select Query (Multiple if multiple tables and combine together)
 - If DISTINCT, Remove all but one copy of same tuples
 - Execute Aggregate on Output of Where
 
