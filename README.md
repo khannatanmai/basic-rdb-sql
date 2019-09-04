@@ -5,6 +5,8 @@ A basic Relational Database which takes SQL Queries in Python
 - Should have metadata.txt
 - table_name.csv should exist
 - attributes given in SELECT should be in the table
+- with multiple tables, if attribute is "table1.A" then "table1" should be in FROM
+- with multiple tables, tables should be same length
 
 ## Note
 - Order of attributes in SELECT does not matter

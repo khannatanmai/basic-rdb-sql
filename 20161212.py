@@ -13,9 +13,9 @@ class SQLParser(object):
 		for token in stmt.tokens:
 			if isinstance(token, IdentifierList):
 				for identifier in token.get_identifiers():
-					columns.append(identifier.get_real_name())
+					columns.append(str(identifier))
 			if isinstance(token, Identifier):
-				columns.append(token.get_real_name())
+				columns.append(str(token))
 			if token.ttype is Keyword:  # from
 				break
 		return columns
@@ -228,6 +228,46 @@ def aggregate_query(metadata_all, table_name, check_retval):
 
 	return return_output
 
+def multiple_table_select(metadata_all, table_list, query_attributes_list):
+	#Calls select for each table and puts them together in one table
+	return_table = []
+
+	query_list_dict = {} #Key: TableName, Value: Attributes needed from that Table
+
+	for table_name in table_list:
+		query_list_dict[table_name] = [] #Add all the keys, and empty arrays for the columns needed
+
+	for attribute in query_attributes_list:
+		if "." in attribute: #If Table Name has been mentioned
+			attribute_table = attribute.split(".")[0]
+
+			if attribute_table in query_list_dict:
+				query_list_dict[attribute_table].append(attribute.split(".")[1]) #Add column name to dict
+
+			else:
+				print("Error: Table mentioned in Query Attribute not recognised!")
+				exit(EXIT_FAILURE)
+
+		else: #Find which table this column belongs to
+			pass
+
+	for table_name, query_list in query_list_dict.items(): #Creating a combined table by calling select for EACH table
+
+		if len(return_table) < 1: #return_table is empty (first iteration)
+			return_table = select_query(metadata_all, table_name, query_list)
+
+		else: #(all other iterations)
+			next_table = select_query(metadata_all, table_name, query_list)
+
+			if len(return_table) != len(next_table):
+				print("Tables not of same length!")
+				exit(EXIT_FAILURE)
+
+			for i in range(len(next_table)):
+				return_table[i] = return_table[i] + next_table[i] #Combining all the tables into one output
+
+	return return_table
+
 
 
 #MAIN
@@ -237,10 +277,13 @@ metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
 sql_query = "Select A,table1.B,C,D from table1, table2"
-sql_query = "Select B,C from table1"
+sql_query = "Select table1.A, table1.C,table2.D from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
+
+#for token in parsed.tokens:
+	#print(token)
 
 column_list = SQLParser.parse_sql_columns(sql_query)
 table_list = SQLParser.parse_sql_tables(sql_query)
@@ -248,13 +291,14 @@ table_list = SQLParser.parse_sql_tables(sql_query)
 if(len(column_list) == 0):
 	column_list = ["*"]
 
-#for x in sqlparse.sql.IdentifierList(parsed).get_identifiers():
-#	print(x)
 
 #FOR SELECT QUERIES
 final_output = []
 
-final_output = select_query(metadata_all, table_list[0], column_list)
+if(len(table_list) == 1): #If only one table in query
+	final_output = select_query(metadata_all, table_list[0], column_list)
+else: #Multiple tables
+	final_output = multiple_table_select(metadata_all, table_list, column_list)
 
 #Checking if Where exists in Query
 where_flag = 0
@@ -278,8 +322,6 @@ if(retval != "0"): #AGGREGATE FUNCTION PROCESSING
 
 #PRINT FINAL OUTPUT
 print_output(final_output)
-
-
 
 #
 #table_data = read_table(table_name)
