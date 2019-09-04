@@ -5,8 +5,9 @@ A basic Relational Database which takes SQL Queries in Python
 - Should have metadata.txt
 - table_name.csv should exist
 - attributes given in SELECT should be in the table
-- with multiple tables, if attribute is "table1.A" then "table1" should be in FROM
+- with multiple tables, if attribute is "table1.A" then "table1" should be in FROM AND attribute should be of that table
 - with multiple tables, tables should be same length
+- with multiple tables, attribute mentioned should be in one of the tables mentioned
 
 ## Note
 - Order of attributes in SELECT does not matter
@@ -15,8 +16,9 @@ A basic Relational Database which takes SQL Queries in Python
 ## Order of Execution (Pipeline)
 - Parse Query
 - Check if multiple tables
-- Execute Select Query
+- Execute Select Query (Multiple if multiple tables and combine together)
 - Execute Where on Output of Select
+- If DISTINCT, Remove all but one copy of same tuples
 - Execute Aggregate on Output of Where
 
 ## TO-DO

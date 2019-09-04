@@ -150,7 +150,7 @@ def select_query(metadata_all, table_name, query_attributes_list):
 		#Verification that all columns given exist in table
 		for query_attribute in query_attributes_list:
 			if query_attribute not in table_attributes_list:
-				print("Attribute mentioned in SELECT not found in", table_name)
+				print("Attribute " + str(query_attribute) + " mentioned in SELECT not found in", table_name)
 				sys.exit(1)
 				#ERROR
 
@@ -224,7 +224,7 @@ def aggregate_query(metadata_all, table_name, check_retval):
 
 	else:
 		print("ERROR in Aggregate Functions")
-		exit(EXIT_FAILURE)
+		sys.exit(1)
 
 	return return_output
 
@@ -239,17 +239,27 @@ def multiple_table_select(metadata_all, table_list, query_attributes_list):
 
 	for attribute in query_attributes_list:
 		if "." in attribute: #If Table Name has been mentioned
-			attribute_table = attribute.split(".")[0]
+			attribute_table_name = attribute.split(".")[0]
 
-			if attribute_table in query_list_dict:
-				query_list_dict[attribute_table].append(attribute.split(".")[1]) #Add column name to dict
+			if attribute_table_name in query_list_dict:
+				query_list_dict[attribute_table_name].append(attribute.split(".")[1]) #Add column name to dict
 
 			else:
 				print("Error: Table mentioned in Query Attribute not recognised!")
-				exit(EXIT_FAILURE)
+				sys.exit(1)
 
-		else: #Find which table this column belongs to
-			pass
+		else: #Find which table this column belongs to (only out of tables given after from)
+			found_flag = 0
+
+			for table_name in table_list:
+				if attribute in metadata_all[table_name].attributes: #the current attribute is a part of this table
+					query_list_dict[table_name].append(str(attribute))
+					found_flag = 1
+					break
+			
+			if(found_flag == 0): #Didn't find attribute in any of the mentioned tables
+				print("Attribute " + str(attribute) + " Not Found in any of the mentioned tables!")
+				sys.exit(1)
 
 	for table_name, query_list in query_list_dict.items(): #Creating a combined table by calling select for EACH table
 
@@ -261,7 +271,7 @@ def multiple_table_select(metadata_all, table_list, query_attributes_list):
 
 			if len(return_table) != len(next_table):
 				print("Tables not of same length!")
-				exit(EXIT_FAILURE)
+				sys.exit(1)
 
 			for i in range(len(next_table)):
 				return_table[i] = return_table[i] + next_table[i] #Combining all the tables into one output
@@ -276,8 +286,8 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select A,table1.B,C,D from table1, table2"
-sql_query = "Select table1.A, table1.C,table2.D from table1,table2"
+sql_query = "Select A,C from table1"
+sql_query = "Select A,B,C,D from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
