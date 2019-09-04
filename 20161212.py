@@ -235,11 +235,9 @@ def aggregate_query(metadata_all, table_name, check_retval):
 metadata_all = {} #dictionary where key is tablename and value is TableMetadata object
 metadata_all = read_metadata(metadata_all)
 
-final_output = []
-
 #Query Parsing
 sql_query = "Select A,table1.B,C,D from table1, table2"
-sql_query = "Select max(B) from table1"
+sql_query = "Select B,C from table1"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -254,6 +252,9 @@ if(len(column_list) == 0):
 #	print(x)
 
 #FOR SELECT QUERIES
+final_output = []
+
+final_output = select_query(metadata_all, table_list[0], column_list)
 
 #Checking if Where exists in Query
 where_flag = 0
@@ -265,32 +266,18 @@ for token in parsed.tokens:
 
 if(where_flag == 1):
 	print("Where Query!")
+	#TODO
 
+#Checking if Aggregate Function in Query
+retval = check_aggregate(parsed.tokens)
+if(retval != "0"): #AGGREGATE FUNCTION PROCESSING
+	#print(retval)
+	final_output = aggregate_query(metadata_all, table_list[0], retval)
 
-else: #No Where Present in Query
-	retval = check_aggregate(parsed.tokens)
-
-	if(retval == "0"): #No Aggregate Function Present in Query, i.e. Normal Select Query
-		ret_table = select_query(metadata_all, table_list[0], column_list)
-		final_output = ret_table
-
-	else: #AGGREGATE FUNCTION PROCESSING
-		#print(retval)
-		final_output = aggregate_query(metadata_all, table_list[0], retval)
-		
 
 
 #PRINT FINAL OUTPUT
 print_output(final_output)
-
-
-
-
-
-
-
-
-
 
 
 

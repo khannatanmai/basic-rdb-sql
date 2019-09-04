@@ -10,6 +10,13 @@ A basic Relational Database which takes SQL Queries in Python
 - Order of attributes in SELECT does not matter
 - In Aggregate, no space between function and brackets
 
+## Order of Execution (Pipeline)
+- Parse Query
+- Check if multiple tables
+- Execute Select Query
+- Execute Where on Output of Select
+- Execute Aggregate on Output of Where
+
 ## TO-DO
 - [x] Parse SQL Queries
 - [x] Select All records using *
