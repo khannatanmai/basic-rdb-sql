@@ -341,7 +341,7 @@ def where_comparison_check(data_cell, check_function, check_value):
 
 	return 0
 
-def where_query(metadata_all, table_list, parsed_where):
+def where_query(metadata_all, table_list, parsed_where, column_list):
 	pruned_table = []
 	select_output_table = [] 
 
@@ -372,16 +372,53 @@ def where_query(metadata_all, table_list, parsed_where):
 		sys.exit(1)
 
 	for select_tuple in select_output_table:
-		if(where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1):
+		if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1:
 			pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
 
 
 	#AND/OR present
 
 
-	return pruned_table
+	#Run Select on this to get only required columns 
+	header_line = pruned_table[0]
 
-	#Run Select on this to get only required columns
+	indices_list = []
+
+	for attribute_name in column_list:
+		index_count = 0
+		found_flag = 0
+		
+		for header_attribute in header_line: 
+			
+			if attribute_name == header_attribute: #full name provided in query
+				indices_list.append(index_count)
+				found_flag = 1
+				break
+
+			if attribute_name == header_attribute.split(".")[1]: #only column name provided
+				indices_list.append(index_count)
+				found_flag = 1
+				break
+
+			index_count += 1
+
+		if found_flag == 0:
+			print("Column in SELECT not found in the mentioned table(s)!")
+			sys.exit(1)
+
+	#Creating Final Table
+	final_table = []
+
+	for tuple_data in pruned_table:
+		final_tuple_data = []
+
+		for index_count in indices_list:
+			final_tuple_data.append(tuple_data[index_count])
+
+		final_table.append(final_tuple_data)
+
+	return final_table
+
 
 #MAIN
 
@@ -389,8 +426,8 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select A,C from table1 where A= 411"
-sql_query = "Select * from table1,table2"
+sql_query = "Select B,C from table1 where A > 0"
+sql_query2 = "Select * from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -426,9 +463,8 @@ else:
 
 	#PROCESSING WHERE
 	if len(parsed_where) > 0:
-		#print(parsed_where)
 
-		final_output = where_query(metadata_all, table_list, parsed_where)
+		final_output = where_query(metadata_all, table_list, parsed_where, column_list)
 
 #Checking if Aggregate Function in Query
 retval = check_aggregate(parsed.tokens)

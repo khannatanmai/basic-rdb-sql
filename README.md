@@ -9,10 +9,13 @@ A basic Relational Database which takes SQL Queries in Python
 - with multiple tables, tables should be same length
 - with multiple tables, attribute mentioned should be in one of the tables mentioned
 - attribute in WHERE must be in mentioned tables
+- Columns mentioned in Select where must be in mentioned tables
+- Module won't point out ambiguity
 
 ## Note
 - Order of attributes in SELECT does not matter
 - In Aggregate, no space between function and brackets
+- Where clause column need not be in select columns
 
 ## Order of Execution (Pipeline)
 - Parse Query
@@ -38,8 +41,9 @@ A basic Relational Database which takes SQL Queries in Python
 - [ ] Add Distinct
 - [x] Detect Where Clause (single)
 - [x] Run Where Clause on full table and give pruned table
-- [ ] Run SelectWhere on Pruned table to give only required columns
+- [x] Run SelectWhere on Pruned table to give only required columns
 - [ ] Add functionality for OR and AND in Where
 - [ ] Detect when Join
 - [ ] Join Tables (Remove Common Column)
+- [ ] Multiple table select gives Cross Join
  
