@@ -371,12 +371,37 @@ def where_query(metadata_all, table_list, parsed_where, column_list):
 		print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
 		sys.exit(1)
 
-	for select_tuple in select_output_table:
-		if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1:
-			pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
+	if len(parsed_where) <= 3: #No AND/OR in Where Condition
+		for select_tuple in select_output_table:
+			if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1:
+				pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
 
+	else: #AND/OR present
+		check_attribute2 = parsed_where[4] #parsed_where[3] is AND/OR
+		check_function2 = parsed_where[5]
+		check_value2 = int(parsed_where[6])
 
-	#AND/OR present
+		attr_index2 = 0
+		found_flag = 0
+		for i in range(len(pruned_table[0])):
+			if check_attribute2 == pruned_table[0][i] or check_attribute2 == pruned_table[0][i].split(".")[1]:
+				found_flag = 1
+				attr_index2 = i
+				break
+
+		if found_flag == 0:
+			print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
+			sys.exit(1)
+
+		if parsed_where[3] == "AND":
+			for select_tuple in select_output_table:
+				if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1 and where_comparison_check(int(select_tuple[attr_index2]), check_function2, check_value2) == 1:
+					pruned_table.append(select_tuple) #If BOTH Condition Check returns true, Add to Pruned Table
+
+		elif parsed_where[3] == "OR":
+			for select_tuple in select_output_table:
+				if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1 or where_comparison_check(int(select_tuple[attr_index2]), check_function2, check_value2) == 1:
+					pruned_table.append(select_tuple) #If EITHER Condition Check returns true, Add to Pruned Table
 
 
 	#Run Select on this to get only required columns 
@@ -426,7 +451,7 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select B,C from table1 where A > 0"
+sql_query = "Select B,C from table1 where A =411 or A=858"
 sql_query2 = "Select * from table1,table2"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
