@@ -48,7 +48,7 @@ A basic Relational Database which takes SQL Queries in Python
 - [ ] Remove Common Column in Join?
 - [x] Multiple table select gives Cross Join
 - [x] Aggregate functions in the pipeline at the end (work with where etc)
-- [ ] Table values (csv) can have double quotes
+- [x] Table values (csv) can have double quotes
 - [x] Take input from stdin
 
 ## Tested Queries
@@ -56,6 +56,7 @@ A basic Relational Database which takes SQL Queries in Python
 - "Select AVERAGE(A) from table1 where A < 0"
 - "Select A,D,table2.B from table1, table2"
 - "Select D,A from table1, table2 where table1.B = table2.B"
+- "Select * from table1, table2 where table1.B = table2.B"
 - "Select A,D,table1.B from table1, table2 where table1.B < 100"
 - "Select MAX(A) from table1, table2 where table1.B = table2.B"
 - "Select  A,C from table1"

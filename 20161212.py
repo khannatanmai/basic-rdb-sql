@@ -345,6 +345,7 @@ def where_comparison_check(data_cell, check_function, check_value):
 def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval):
 	pruned_table = []
 	select_output_table = [] 
+	join_flag = 0
 
 	#Get full tables
 	if len(table_list) == 1: #If only one table in query
@@ -379,6 +380,7 @@ def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 					pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
 
 		else: #it's a join condition
+			join_flag = 1
 			attr_index = 0
 			found_flag = 0
 			for i in range(len(pruned_table[0])):
@@ -425,7 +427,7 @@ def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 				if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1 or where_comparison_check(int(select_tuple[attr_index2]), check_function2, check_value2) == 1:
 					pruned_table.append(select_tuple) #If EITHER Condition Check returns true, Add to Pruned Table
 
-
+	header_line = pruned_table[0]
 	
 	if column_list[0] == "*" and agg_retval == "0": 
 		return pruned_table #If it's select * then just return all columns
@@ -433,8 +435,6 @@ def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 	#If not *, Run Select on this to get only required columns 
 	if agg_retval != "0": #There is an aggregate function in the string
 		column_list = [agg_retval.replace("("," ").replace(")"," ").split(" ")[1]] #replacing brackets with spaces and giving column name]
-
-	header_line = pruned_table[0]
 
 	indices_list = []
 
