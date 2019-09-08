@@ -126,48 +126,58 @@ def read_table(table_name):
 
 	return table_data
 
-def select_query(metadata_all, table_name, query_attributes_list):
+def select_query(metadata_all, table_name, query_attributes_list, agg_retval):
 	return_table = []
 
 	table_data = read_table(table_name)
 
 	table_attributes_list = metadata_all[table_name].attributes
 
-	if query_attributes_list[0] == "*": #If returning all columns of table
-		header_line = table_attributes_list
+	header_line = []
+	for attribute in table_attributes_list:
+		header_line.append(table_name + "." + attribute) #adding table name to header
 
-		new_header_line = []
-		for header in header_line:
-			new_header_line.append(table_name + "." + header) #adding table name to header
-
-		return_table.append(new_header_line)
+	if query_attributes_list[0] == "*" and agg_retval == "0": #If returning all columns of table and not aggregate
+		
+		return_table.append(header_line)
 
 		for data_tuple in table_data:
 			return_table.append(data_tuple)
 
 	else:
+		indices_list = []
 
-		#Verification that all columns given exist in table
+		#if Aggregate function, change AGG(Column_Name) to Column_Name
+
+		if agg_retval != "0": #There is an aggregate function in the string
+			query_attributes_list = [agg_retval.replace("("," ").replace(")"," ").split(" ")[1]] #replacing brackets with spaces and giving column name]
+
+		#Verification that all columns given exist in table AND getting only mentioned columns
+		
 		for query_attribute in query_attributes_list:
-			if query_attribute not in table_attributes_list:
+			found_flag = 0
+			index_count = 0
+			
+			for header_attribute in header_line: 
+				
+				if query_attribute == header_attribute: #full name provided in query
+					indices_list.append(index_count)
+					found_flag = 1
+					break
+
+				if query_attribute == header_attribute.split(".")[1]: #only column name provided
+					indices_list.append(index_count)
+					found_flag = 1
+					break
+
+				index_count += 1
+
+			if found_flag == 0:
 				print("Attribute " + str(query_attribute) + " mentioned in SELECT not found in", table_name)
 				sys.exit(1)
-				#ERROR
 
-		#now we need the indices to print only the columns we need from the csv file
-		indices_list = []
-		header_line = []
-
-		index_count = 0
-		for table_attribute in table_attributes_list:
-			if table_attribute in query_attributes_list:
-				indices_list.append(index_count)
-				header_line.append(table_name + "." + table_attribute)
-
-			index_count += 1
-
-		return_table.append(header_line)
-
+		table_data = [header_line] + table_data #Adding header_line to table_data
+		
 		for data_tuple in table_data:
 			return_table_tuple = []
 
@@ -192,7 +202,7 @@ def check_aggregate(sql_query_parsed_tokens):
 
 	return "0" #to keep return value consistent
 
-def aggregate_query(metadata_all, table_name, check_retval):
+def aggregate_query(current_table, check_retval):
 	column_list = []
 	return_output = []
 
@@ -201,13 +211,11 @@ def aggregate_query(metadata_all, table_name, check_retval):
 	agg_func = agg_string[0]
 	column_list.append(agg_string[1])
 
-	ret_table = select_query(metadata_all, table_list[0], column_list) #Get the column
-
-	header_line = str(agg_func + "(" + ret_table[0][0] + ")")
+	header_line = str(agg_func + "(" + current_table[0][0] + ")")
 	
 	return_output.append([header_line])
 
-	numbers_data = [ int(x[0]) for x in ret_table[1:] ] #excluding Header Line
+	numbers_data = [ int(x[0]) for x in current_table[1:] ] #excluding Header Line
 	
 	if agg_func == "MAX":
 		return_output.append([str(max(numbers_data))])
@@ -341,13 +349,13 @@ def where_comparison_check(data_cell, check_function, check_value):
 
 	return 0
 
-def where_query(metadata_all, table_list, parsed_where, column_list):
+def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval):
 	pruned_table = []
 	select_output_table = [] 
 
 	#Get full tables
 	if len(table_list) == 1: #If only one table in query
-		select_output_table = select_query(metadata_all, table_list[0], ["*"])
+		select_output_table = select_query(metadata_all, table_list[0], ["*"], "0")
 	else: #Multiple tables
 		select_output_table = multiple_table_select(metadata_all, table_list, ["*"])
 
@@ -404,7 +412,14 @@ def where_query(metadata_all, table_list, parsed_where, column_list):
 					pruned_table.append(select_tuple) #If EITHER Condition Check returns true, Add to Pruned Table
 
 
-	#Run Select on this to get only required columns 
+	
+	if column_list[0] == "*" and agg_retval == "0": 
+		return pruned_table #If it's select * then just return all columns
+
+	#If not *, Run Select on this to get only required columns 
+	if agg_retval != "0": #There is an aggregate function in the string
+		column_list = [agg_retval.replace("("," ").replace(")"," ").split(" ")[1]] #replacing brackets with spaces and giving column name]
+
 	header_line = pruned_table[0]
 
 	indices_list = []
@@ -451,8 +466,8 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select B,C from table1 where A =411 or A=858"
-sql_query2 = "Select * from table1,table2"
+sql_query = "Select table1.A,C from table1 where C < 0"
+sql_query = "Select AVERAGE(A) from table1 where A < 0"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -462,6 +477,9 @@ table_list = SQLParser.parse_sql_tables(sql_query)
 
 if len(column_list) == 0:
 	column_list = ["*"]
+
+#Checking if Aggregate Function in Query
+agg_retval = check_aggregate(parsed.tokens)
 
 #Checking if Where exists in Query
 parsed_where = []
@@ -480,7 +498,7 @@ if where_flag == 0:
 	final_output = []
 
 	if len(table_list) == 1: #If only one table in query
-		final_output = select_query(metadata_all, table_list[0], column_list)
+		final_output = select_query(metadata_all, table_list[0], column_list, agg_retval)
 	else: #Multiple tables
 		final_output = multiple_table_select(metadata_all, table_list, column_list)
 
@@ -489,16 +507,13 @@ else:
 	#PROCESSING WHERE
 	if len(parsed_where) > 0:
 
-		final_output = where_query(metadata_all, table_list, parsed_where, column_list)
+		final_output = where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 
-#Checking if Aggregate Function in Query
-retval = check_aggregate(parsed.tokens)
+
 
 #PROCESSING AGGREGATE FUNCTION 
-if(retval != "0"): 
-	final_output = aggregate_query(metadata_all, table_list[0], retval)
-
-
+if(agg_retval != "0"): 
+	final_output = aggregate_query(final_output, agg_retval)
 
 #PRINT FINAL OUTPUT
 print_output(final_output)

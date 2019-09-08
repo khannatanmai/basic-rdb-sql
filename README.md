@@ -46,4 +46,5 @@ A basic Relational Database which takes SQL Queries in Python
 - [ ] Detect when Join
 - [ ] Join Tables (Remove Common Column)
 - [ ] Multiple table select gives Cross Join
+- [x] Aggregate functions in the pipeline at the end (work with where etc)
  
