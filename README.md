@@ -43,8 +43,8 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Run Where Clause on full table and give pruned table
 - [x] Run SelectWhere on Pruned table to give only required columns
 - [x] Add functionality for OR and AND in Where
-- [ ] Detect when Join
+- [x] Detect when Join
 - [ ] Join Tables (Remove Common Column)
-- [ ] Multiple table select gives Cross Join
+- [x] Multiple table select gives Cross Join
 - [x] Aggregate functions in the pipeline at the end (work with where etc)
  

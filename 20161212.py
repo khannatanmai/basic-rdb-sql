@@ -236,75 +236,66 @@ def aggregate_query(current_table, check_retval):
 
 	return return_output
 
-def multiple_table_select(metadata_all, table_list, query_attributes_list):
-	#Calls select for each table and puts them together in one table
+def multiple_table_select(metadata_all, table_list, query_attributes_list): #Works for two tables for now
 	return_table = []
 
-	if query_attributes_list[0] == "*": #Get ALL columns from all tables mentioned
-		for table_name in table_list: #Creating a combined table by calling select * for EACH table
+	table_name1 = table_list[0]
+	table_name2 = table_list[1]
 
-			if len(return_table) < 1: #return_table is empty (first iteration)
-				return_table = select_query(metadata_all, table_name, ["*"])
+	table_data1 = select_query(metadata_all, table_name1, ["*"], "0")
+	table_data2 = select_query(metadata_all, table_name2, ["*"], "0")
 
-			else: #(all other iterations)
-				next_table = select_query(metadata_all, table_name, ["*"])
+	header_line = table_data1[0] + table_data2[0]
+	return_table.append(header_line) 
 
-				if len(return_table) != len(next_table):
-					print("Tables not of same length!")
-					sys.exit(1)
+	table_data1 = table_data1[1:] #Remove Header Line
+	table_data2 = table_data2[1:]
 
-				for i in range(len(next_table)):
-					return_table[i] = return_table[i] + next_table[i] #Combining all the tables into one output
+	for data_tuple1 in table_data1:
+		for data_tuple2 in table_data2:
+			return_table.append(data_tuple1 + data_tuple2)
 
+	if query_attributes_list[0] == "*": #If select *
 		return return_table
 
 	#If it's NOT Select *
 
-	query_list_dict = {} #Key: TableName, Value: Attributes needed from that Table
+	indices_list = []
 
-	for table_name in table_list:
-		query_list_dict[table_name] = [] #Add all the keys, and empty arrays for the columns needed
-
-	for attribute in query_attributes_list:
-		if "." in attribute: #If Table Name has been mentioned
-			attribute_table_name = attribute.split(".")[0]
-
-			if attribute_table_name in query_list_dict:
-				query_list_dict[attribute_table_name].append(attribute.split(".")[1]) #Add column name to dict
-
-			else:
-				print("Error: Table mentioned in Query Attribute not recognised!")
-				sys.exit(1)
-
-		else: #Find which table this column belongs to (only out of tables given after from)
+	for query_attribute in query_attributes_list:
 			found_flag = 0
-
-			for table_name in table_list:
-				if attribute in metadata_all[table_name].attributes: #the current attribute is a part of this table
-					query_list_dict[table_name].append(str(attribute))
+			index_count = 0
+			
+			for header_attribute in header_line: 
+				
+				if query_attribute == header_attribute: #full name provided in query
+					indices_list.append(index_count)
 					found_flag = 1
 					break
-			
-			if(found_flag == 0): #Didn't find attribute in any of the mentioned tables
-				print("Attribute " + str(attribute) + " Not Found in any of the mentioned tables!")
+
+				if query_attribute == header_attribute.split(".")[1]: #only column name provided
+					indices_list.append(index_count)
+					found_flag = 1
+					break
+
+				index_count += 1
+
+			if found_flag == 0:
+				print("Attribute " + str(query_attribute) + " mentioned in SELECT not found in the tables.")
 				sys.exit(1)
 
-	for table_name, query_list in query_list_dict.items(): #Creating a combined table by calling select for EACH table
+	#Creating Final Table
+	final_table = []
 
-		if len(return_table) < 1: #return_table is empty (first iteration)
-			return_table = select_query(metadata_all, table_name, query_list)
+	for tuple_data in return_table:
+		final_tuple_data = []
 
-		else: #(all other iterations)
-			next_table = select_query(metadata_all, table_name, query_list)
+		for index_count in indices_list:
+			final_tuple_data.append(tuple_data[index_count])
 
-			if len(return_table) != len(next_table):
-				print("Tables not of same length!")
-				sys.exit(1)
+		final_table.append(final_tuple_data)
 
-			for i in range(len(next_table)):
-				return_table[i] = return_table[i] + next_table[i] #Combining all the tables into one output
-
-	return return_table
+	return final_table
 
 def parse_where(where_string):
 	allowed_functions = ["<=", ">=", "<", ">", "="] #Need to check double operators first
@@ -365,24 +356,45 @@ def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 
 	check_attribute = parsed_where[0]
 	check_function = parsed_where[1]
-	check_value = int(parsed_where[2])
-
-	attr_index = 0
-	found_flag = 0
-	for i in range(len(pruned_table[0])):
-		if check_attribute == pruned_table[0][i] or check_attribute == pruned_table[0][i].split(".")[1]:
-			found_flag = 1
-			attr_index = i
-			break
-
-	if found_flag == 0:
-		print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
-		sys.exit(1)
+	check_value = parsed_where[2]
 
 	if len(parsed_where) <= 3: #No AND/OR in Where Condition
-		for select_tuple in select_output_table:
-			if where_comparison_check(int(select_tuple[attr_index]), check_function, check_value) == 1:
-				pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
+		if check_value.isdigit(): #normal where condition
+			attr_index = 0
+			found_flag = 0
+			for i in range(len(pruned_table[0])):
+				if check_attribute == pruned_table[0][i] or check_attribute == pruned_table[0][i].split(".")[1]:
+					found_flag = 1
+					attr_index = i
+					break
+
+			if found_flag == 0:
+				print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
+				sys.exit(1)
+
+			for select_tuple in select_output_table:
+				if where_comparison_check(int(select_tuple[attr_index]), check_function, int(check_value)) == 1:
+					pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
+
+		else: #it's a join condition
+			attr_index = 0
+			found_flag = 0
+			for i in range(len(pruned_table[0])):
+				if check_attribute == pruned_table[0][i] or check_attribute == pruned_table[0][i].split(".")[1]:
+					found_flag += 1
+					attr_index = i
+
+				elif check_value == pruned_table[0][i] or check_value == pruned_table[0][i].split(".")[1]:
+					found_flag += 1
+					attr_index_val = i
+
+			if found_flag < 2:
+				print("Error: Attribute Mentioned in WHERE is in none of the mentioned tables.")
+				sys.exit(1)
+
+			for select_tuple in select_output_table:
+				if where_comparison_check(int(select_tuple[attr_index]), check_function, int(select_tuple[attr_index_val])) == 1:
+					pruned_table.append(select_tuple) #If Condition Check returns true, Add to Pruned Table
 
 	else: #AND/OR present
 		check_attribute2 = parsed_where[4] #parsed_where[3] is AND/OR
@@ -466,8 +478,12 @@ metadata_all = {} #dictionary where key is tablename and value is TableMetadata 
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select table1.A,C from table1 where C < 0"
-sql_query = "Select AVERAGE(A) from table1 where A < 0"
+sql_query = "Select table1.A,C from table1 where A < 0"
+sql_query2 = "Select AVERAGE(A) from table1 where A < 0"
+sql_query2 = "Select A,D,table2.B from table1, table2"
+sql_query = "Select D,A from table1, table2 where table1.B = table2.B"
+sql_query2 = "Select A,D,table1.B from table1, table2 where table1.B < 100"
+sql_query = "Select MAX(A) from table1, table2 where table1.B = table2.B"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
@@ -509,32 +525,9 @@ else:
 
 		final_output = where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 
-
-
 #PROCESSING AGGREGATE FUNCTION 
 if(agg_retval != "0"): 
 	final_output = aggregate_query(final_output, agg_retval)
 
 #PRINT FINAL OUTPUT
 print_output(final_output)
-
-#
-#table_data = read_table(table_name)
-
-#return_table = select_query(metadata_all, table_name, table_data, ["*"])
-
-#print_output(return_table)
-
-#print(table_data)
-
-#METADATA TESTING
-'''
-for table_name, table_metadata in metadata_all.items():
-	print "Table Name:", table_name
-
-	print "Attributes:"
-
-	print table_metadata.attributes
-
-	print "***"
-'''
