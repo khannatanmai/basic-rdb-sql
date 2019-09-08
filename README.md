@@ -44,7 +44,9 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Run SelectWhere on Pruned table to give only required columns
 - [x] Add functionality for OR and AND in Where
 - [x] Detect when Join
-- [ ] Join Tables (Remove Common Column)
+- [x] Join Tables
+- [ ] Remove Common Column in Join?
 - [x] Multiple table select gives Cross Join
 - [x] Aggregate functions in the pipeline at the end (work with where etc)
+- [ ] Table values (csv) can have double quotes
  

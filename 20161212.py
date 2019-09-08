@@ -1,5 +1,6 @@
 import sys
 import sqlparse
+import re
 from sqlparse.sql import IdentifierList, Identifier
 from sqlparse.tokens import Keyword
 
@@ -484,9 +485,23 @@ sql_query2 = "Select A,D,table2.B from table1, table2"
 sql_query = "Select D,A from table1, table2 where table1.B = table2.B"
 sql_query2 = "Select A,D,table1.B from table1, table2 where table1.B < 100"
 sql_query = "Select MAX(A) from table1, table2 where table1.B = table2.B"
+sql_query = "Select  A,C from table1"
+sql_query = "Select distinct A,C from table1"
 #print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
 
 parsed = sqlparse.parse(sql_query)[0]
+
+distinct_flag = 0
+
+for token in parsed.tokens:
+	if "DISTINCT" in token.value.upper():
+		distinct_flag = 1
+ 
+if distinct_flag == 1: #Remove distinct from query -- Later we remove duplicates
+	distinct_remove = re.compile(re.escape("distinct"), re.IGNORECASE)
+	sql_query = distinct_remove.sub("", sql_query)
+
+	parsed = sqlparse.parse(sql_query)[0]
 
 column_list = SQLParser.parse_sql_columns(sql_query)
 table_list = SQLParser.parse_sql_tables(sql_query)
@@ -526,8 +541,16 @@ else:
 		final_output = where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 
 #PROCESSING AGGREGATE FUNCTION 
-if(agg_retval != "0"): 
+if agg_retval != "0": 
 	final_output = aggregate_query(final_output, agg_retval)
 
+#PROCESSING DISTINCT
+if distinct_flag == 1:
+	new_final_output = []
+	for data_tuple in final_output:
+		if data_tuple not in new_final_output:
+			new_final_output.append(data_tuple)
+
+	final_output = new_final_output
 #PRINT FINAL OUTPUT
 print_output(final_output)
