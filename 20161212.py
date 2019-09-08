@@ -116,6 +116,7 @@ def read_table(table_name):
 
 			for line in data:
 				line = line.strip()
+				line = line.replace('"', '') #Remove double quotes in input
 				line = line.split(",")
 
 				table_data.append(line)
@@ -474,21 +475,16 @@ def where_query(metadata_all, table_list, parsed_where, column_list, agg_retval)
 
 
 #MAIN
+if len(sys.argv) < 2:
+	print("Error: Give SQL Query as argument!")
+	sys.exit(1)
+
+sql_query = sys.argv[1]
 
 metadata_all = {} #dictionary where key is tablename and value is TableMetadata object
 metadata_all = read_metadata(metadata_all)
 
 #Query Parsing
-sql_query = "Select table1.A,C from table1 where A < 0"
-sql_query2 = "Select AVERAGE(A) from table1 where A < 0"
-sql_query2 = "Select A,D,table2.B from table1, table2"
-sql_query = "Select D,A from table1, table2 where table1.B = table2.B"
-sql_query2 = "Select A,D,table1.B from table1, table2 where table1.B < 100"
-sql_query = "Select MAX(A) from table1, table2 where table1.B = table2.B"
-sql_query = "Select  A,C from table1"
-sql_query = "Select distinct A,C from table1"
-#print(sqlparse.format(sql_query, reindent=True, keyword_case='upper'))
-
 parsed = sqlparse.parse(sql_query)[0]
 
 distinct_flag = 0
@@ -521,7 +517,6 @@ for token in parsed.tokens:
 		parsed_where = parse_where(token)
 		where_flag = 1
 		break
-
 
 if where_flag == 0:
 

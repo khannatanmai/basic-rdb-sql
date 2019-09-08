@@ -38,7 +38,7 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Deal with Aggregate Functions
 - [x] Deal with more than one table (multiple calls to select)
 - [x] Incorporate multiple tables in final output
-- [ ] Add Distinct
+- [x] Add Distinct
 - [x] Detect Where Clause (single)
 - [x] Run Where Clause on full table and give pruned table
 - [x] Run SelectWhere on Pruned table to give only required columns
@@ -49,4 +49,15 @@ A basic Relational Database which takes SQL Queries in Python
 - [x] Multiple table select gives Cross Join
 - [x] Aggregate functions in the pipeline at the end (work with where etc)
 - [ ] Table values (csv) can have double quotes
+- [x] Take input from stdin
+
+## Tested Queries
+- "Select table1.A,C from table1 where A < 0"
+- "Select AVERAGE(A) from table1 where A < 0"
+- "Select A,D,table2.B from table1, table2"
+- "Select D,A from table1, table2 where table1.B = table2.B"
+- "Select A,D,table1.B from table1, table2 where table1.B < 100"
+- "Select MAX(A) from table1, table2 where table1.B = table2.B"
+- "Select  A,C from table1"
+- "Select distinct A,C from table1"
  
